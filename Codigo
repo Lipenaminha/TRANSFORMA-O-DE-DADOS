@@ -1,0 +1,44 @@
+import pdfplumber
+import pandas as pd
+import zipfile 
+import os
+
+
+
+pdf_path = "downloads/anexo_1.pdf"
+csv_filename = "Rol_de_Procedimentos.csv"
+zip_filename = "Teste_Intuitive.zip"  
+
+def extrair_tabela_do_pdf(pdf_path):
+    dados_extraidos = []
+    with pdfplumber.open(pdf_path) as pdf:
+        for pagina in pdf.pages:
+            tabelas = pagina.extract_table()
+            if tabelas:
+                for linha in tabelas:
+                    dados_extraidos.append(linha)
+    return dados_extraidos
+
+dados = extrair_tabela_do_pdf(pdf_path)
+
+df = pd.DataFrame(dados)
+
+df = df.dropna(how="all")
+df.columns = df.iloc[0]  
+df = df[1:] 
+
+substituicoes = {
+    "OD": "Procedimentos Odontológicos",
+    "AMB": "Procedimentos Ambulatoriais"
+}
+
+df.replace(substituicoes, inplace=True)
+
+df.to_csv(csv_filename, index=False, encoding="utf-8")
+
+with zipfile.ZipFile(zip_filename, "w") as zipf:
+    zipf.write(csv_filename)
+    
+
+print(f"Processo concluído! Arquivo salvo como {zip_filename}")
+
